@@ -27,13 +27,16 @@ CREATE TABLE alert_logs (
 -- 4. 存放會員資料 (組員開發：註冊/登入用)
 CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
-    full_name VARCHAR(100),
-    username VARCHAR(50) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    phone VARCHAR(20),
-    email VARCHAR(100),
-    role VARCHAR(20),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    full_name VARCHAR(20) NOT NULL,          -- 改成 20 配合組員限制
+    username VARCHAR(20) UNIQUE NOT NULL,    -- 改成 20 配合組員限制
+    password_hash TEXT NOT NULL,             -- 改成 TEXT 較通用
+    phone VARCHAR(15) NOT NULL,              -- 配合組員長度
+    email TEXT,
+    fcm_token TEXT,
+    role VARCHAR(20) DEFAULT 'blind',        -- 加入預設值
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- 加入強大的電話格式檢查
+    CONSTRAINT check_phone_format CHECK (phone ~ '^09[0-9]{8}$') 
 );
 
 -- 5. 存放聯絡人綁定關係 (組員開發：盲人與照護者綁定)
@@ -44,15 +47,17 @@ CREATE TABLE connections (
     status VARCHAR(20) DEFAULT 'pending',
     requester_id INT REFERENCES users(user_id),
     is_emergency BOOLEAN DEFAULT false,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- 加入組員的防呆機制，防止重複綁定
+    CONSTRAINT unique_connection UNIQUE (blind_id, caregiver_id) 
 );
 
 -- 6. 存放 SOS 求救紀錄 (組員開發：緊急按鈕)
 CREATE TABLE sos_events (
     id SERIAL PRIMARY KEY,
-    user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
-    latitude FLOAT,
-    longitude FLOAT,
+    user_id INT REFERENCES users(user_id) ON DELETE CASCADE, -- 自動隨使用者刪除
     event_type VARCHAR(50),
+    latitude DOUBLE PRECISION, -- 使用 DOUBLE PRECISION 對齊組員的精準度
+    longitude DOUBLE PRECISION,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
